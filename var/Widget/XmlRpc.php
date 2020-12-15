@@ -1404,7 +1404,9 @@ class Widget_XmlRpc extends Widget_Abstract_Contents implements Widget_Interface
 
         if (isset($content['dateCreated'])) {
             /** 解决客户端与服务器端时间偏移 */
-            $input['created'] = $content['dateCreated']->getTimestamp() - $this->options->timezone + $this->options->serverTimezone;
+            $inputDate = new IXR_Date($content['dateCreated']);
+            $input['created'] = $inputDate->getTimestamp() - $this->options->timezone + $this->options->serverTimezone;
+
         }
 
         if (!empty($content['categories']) && is_array($content['categories'])) {
@@ -1463,6 +1465,13 @@ class Widget_XmlRpc extends Widget_Abstract_Contents implements Widget_Interface
 
                     $input['attachment'][] = $attach['cid'];
                 }
+            }
+        }
+
+        foreach (['fieldNames', 'fieldTypes', 'fieldValues'] as $fieldKey) {
+            $fieldValue = array_key_exists($fieldKey, $content) ? $content[$fieldKey] : NULL;
+            if (!empty($fieldValue)) {
+                $input[$fieldKey] = $fieldValue;
             }
         }
 
@@ -1671,6 +1680,7 @@ class Widget_XmlRpc extends Widget_Abstract_Contents implements Widget_Interface
         if (false === $result) {
             return new IXR_Error(500, _t('上传失败'));
         } else {
+            $this->pluginHandle()->beforeUpload($result);
 
             $insertId = $this->insert(array(
                 'title'     =>  $result['name'],
